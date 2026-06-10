@@ -130,14 +130,19 @@
       <form id="post-form" onsubmit="handleFormSubmit(event)" class="space-y-3">
         <input type="hidden" id="edit-id">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5">
           <!-- タイトル -->
           <div class="md:col-span-2">
             <label class="block text-[9px] font-bold text-slate-700 uppercase mb-0.5">タイトル <span class="text-red-500">*</span></label>
             <input type="text" id="post-title" required placeholder="件名を入力してください" class="w-full px-2.5 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
           </div>
+          <!-- 投稿者 -->
+          <div class="md:col-span-1">
+            <label class="block text-[9px] font-bold text-slate-700 uppercase mb-0.5">投稿者 (任意)</label>
+            <input type="text" id="post-author" placeholder="名前・部署など" class="w-full px-2.5 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+          </div>
           <!-- カテゴリ複数選択（チェックボックス式） -->
-          <div>
+          <div class="md:col-span-1">
             <label class="block text-[9px] font-bold text-slate-700 uppercase mb-1">分類（複数選択可） <span class="text-red-500">*</span></label>
             <div id="post-categories-checkboxes" class="border border-slate-200 rounded-lg p-2 max-h-24 overflow-y-auto bg-white space-y-1.5 text-xs">
               <!-- JSでカテゴリ一覧のチェックボックス群を自動出力 -->
@@ -249,13 +254,14 @@
 
         <div class="mb-2">
           <h4 class="text-[9px] font-bold text-slate-500 mb-1.5 uppercase">登録中のカテゴリ一覧</h4>
+          <!-- 💡 並び替えボタンが表示されるエリア -->
           <div id="settings-categories-list" class="flex flex-wrap gap-1.5">
             <!-- JSで一覧描画 -->
           </div>
         </div>
       </div>
 
-      <!-- セクションC: 【新設】データベース管理（直接リンク） -->
+      <!-- セクションC: データベース管理（直接リンク） -->
       <div class="border-t border-slate-100 pt-3">
         <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
           <i data-lucide="database" class="w-3 h-3 text-blue-600"></i> データベース（DB）管理
@@ -318,9 +324,7 @@
     // =========================================================================
     // ⚠️ Googleドライブ（GAS）連携設定：ここにデプロイ後のウェブアプリURLを入力します
     // =========================================================================
-    // 設定手順書（gas_setup.md）に沿って取得したGASウェブアプリURLをここに貼り付けてください。
-    // スプレッドシート連携APIを介して、完全なクラウド共有状態で掲示板が動作するようになります。
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzqzFH_0felNRjFU8SQ0PG2VzX8iBB9CD-iDRVmm-PTxEuwl3h9WfFClYkXKqOHWR9O7A/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyrjWvWYNOp3x0ws1P-SNrm1pFgbKaN4VWAX37qGHhPhYmaj0DfzaBWSVVIs_N-r89I2A/exec";
 
     // グローバル状態管理
     let posts = [];
@@ -329,10 +333,9 @@
     let selectedDisplayDate = "";
 
     // ==========================================
-    // 📢 ユーティリティ・表示系関数群（最優先定義）
+    // 📢 ユーティリティ・表示系関数群
     // ==========================================
     
-    // 通知トースト
     function showToast(message) {
       const toast = document.getElementById('toast');
       if (!toast) return;
@@ -346,7 +349,6 @@
     }
     window.showToast = showToast;
 
-    // 接続状態インジケーターの更新
     function updateStatus(text, colorClass) {
       const dot = document.getElementById('status-dot');
       const label = document.getElementById('status-text');
@@ -357,7 +359,6 @@
     }
     window.updateStatus = updateStatus;
 
-    // 確認ダイアログ
     function showConfirm(title, message, onConfirm) {
       const alertModal = document.getElementById('custom-alert');
       if (!alertModal) return;
@@ -375,7 +376,6 @@
     }
     window.showConfirm = showConfirm;
 
-    // スプレッドシートからの日付データを安全にYYYY-MM-DDにクレンジングする補助関数
     function normalizeDateStr(dateInput) {
       if (!dateInput) return "";
       const d = new Date(dateInput);
@@ -396,12 +396,11 @@
 
       lucide.createIcons();
 
-      // GASウェブアプリURLの有無を厳密にチェック
       if (GAS_WEB_APP_URL && GAS_WEB_APP_URL !== "") {
         fetchDataFromGAS();
       } else {
         updateStatus("未同期（URL未設定） 🔴", "bg-red-500 animate-none");
-        showToast("連携設定エラー：手順書を参考に「GAS_WEB_APP_URL」を入力して公開してください。");
+        showToast("連携設定エラー：手順書を参考に「GAS_WEB_APP_URL」を入力してください。");
       }
     };
 
@@ -431,19 +430,18 @@
         }
       } catch (err) {
         updateStatus("通信エラー 🔴", "bg-red-500");
-        showToast("ドライブデータベースとの通信に失敗しました。接続設定を確認してください。");
+        console.error("GAS Connection Error:", err);
+        showToast(`エラー: ${err.message}`);
         return { success: false, error: err.message };
       }
     }
 
-    // ドライブからデータ全取得
     async function fetchDataFromGAS() {
       const result = await apiRequestToGAS("readAll");
       if (result && result.success) {
         posts = result.posts || [];
         categories = result.categories || [];
         
-        // クラウド側から動的に掲示板の名前を読み込んで反映
         if (result.config) {
           const titleObj = result.config.find(c => c.key === "board_title");
           if (titleObj && titleObj.value) {
@@ -458,25 +456,16 @@
     }
     window.fetchDataFromGAS = fetchDataFromGAS;
 
-    function refreshBoardData() {
-      if (GAS_WEB_APP_URL && GAS_WEB_APP_URL !== "") {
-        fetchDataFromGAS();
-      } else {
-        showToast("通信エラー：GAS_WEB_APP_URLが設定されていません。");
-      }
-    }
-    window.refreshBoardData = refreshBoardData;
-
     // ==========================================
     // 🎛️ モーダル操作ウインドウ制御
     // ==========================================
     
-    // 新規作成・編集モーダル
     function openCreateForm() {
       document.getElementById('edit-id').value = '';
       document.getElementById('form-title').innerText = "新しい連絡事項を作成";
       document.getElementById('submit-btn-text').innerText = "お知らせを掲載する";
       document.getElementById('post-form').reset();
+      document.getElementById('post-author').value = '';
       document.getElementById('post-pinned').checked = false;
       document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = false);
       
@@ -490,12 +479,9 @@
     }
     window.closeCreateForm = closeCreateForm;
 
-    // 掲示板設定・統合モーダル
     function openSettingsModal() {
-      // 現在表示されている名前をフォームの初期値としてセット
       const currentTitle = document.getElementById('board-title-display').innerText;
       document.getElementById('setting-board-title').value = currentTitle;
-
       document.getElementById('settings-modal').classList.remove('hidden');
     }
     window.openSettingsModal = openSettingsModal;
@@ -509,12 +495,10 @@
     // 💾 データ操作処理（GAS同期）
     // ==========================================
 
-    // 掲示板の名前（タイトル）変更
     async function handleTitleUpdate(e) {
       e.preventDefault();
       const newTitle = document.getElementById('setting-board-title').value.trim();
       if (!newTitle) return;
-
       document.getElementById('save-title-btn').disabled = true;
 
       const result = await apiRequestToGAS("updateConfig", { key: "board_title", value: newTitle });
@@ -522,17 +506,16 @@
         document.getElementById('board-title-display').innerText = newTitle;
         showToast("掲示板の名前を保存し、全体へ同期しました！");
       }
-
       document.getElementById('save-title-btn').disabled = false;
     }
     window.handleTitleUpdate = handleTitleUpdate;
 
-    // 投稿登録・編集
     async function handleFormSubmit(e) {
       e.preventDefault();
       
       const editId = document.getElementById('edit-id').value;
       const title = document.getElementById('post-title').value;
+      const author = document.getElementById('post-author').value;
       const content = document.getElementById('post-content').value;
       let start = document.getElementById('post-start').value;
       const end = document.getElementById('post-end').value;
@@ -548,21 +531,14 @@
         return;
       }
 
-      // 💡 掲載開始日が未入力かつ掲載終了日が入力されている場合、本日（当日）の日付を設定
       if (!start && end) {
         const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        const d = String(today.getDate()).padStart(2, '0');
-        start = `${y}-${m}-${d}`;
+        start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       }
 
       const postData = {
-        title,
-        content,
-        categories: selectedCats.join(','), // ドライブ（GAS）保存用にCSV文字列として定義
-        start,
-        end,
+        title, author, content, start, end,
+        categories: selectedCats.join(','),
         pinned: pinned ? "TRUE" : "FALSE"
       };
 
@@ -582,18 +558,17 @@
         renderBoard();
         showToast(editId ? "お知らせを更新しました！" : "新しくお知らせを追加しました！");
       }
-
       document.getElementById('submit-post-btn').disabled = false;
     }
     window.handleFormSubmit = handleFormSubmit;
 
-    // 編集フォーム展開
     function editPost(id) {
       const post = posts.find(p => p.id === id);
       if (!post) return;
 
       document.getElementById('edit-id').value = post.id;
       document.getElementById('post-title').value = post.title;
+      document.getElementById('post-author').value = post.author || '';
       document.getElementById('post-content').value = post.content;
       document.getElementById('post-start').value = normalizeDateStr(post.start) || '';
       document.getElementById('post-end').value = normalizeDateStr(post.end) || '';
@@ -607,7 +582,6 @@
 
       document.getElementById('form-title').innerText = "お知らせを編集";
       document.getElementById('submit-btn-text').innerText = "更新する";
-
       document.getElementById('create-post-modal').classList.remove('hidden');
     }
     window.editPost = editPost;
@@ -628,8 +602,7 @@
     async function togglePin(id) {
       const post = posts.find(p => p.id === id);
       if (!post) return;
-      const isCurrentlyPinned = post.pinned === "TRUE" || post.pinned === true;
-      const nextPinnedState = isCurrentlyPinned ? "FALSE" : "TRUE";
+      const nextPinnedState = (post.pinned === "TRUE" || post.pinned === true) ? "FALSE" : "TRUE";
 
       const result = await apiRequestToGAS("togglePinPost", { id, pinned: nextPinnedState });
       if (result && result.success) {
@@ -666,7 +639,6 @@
         renderBoard();
         showToast(`カテゴリ「${name}」を追加しました。`);
       }
-
       document.getElementById('add-category-btn').disabled = false;
     }
     window.handleAddCategory = handleAddCategory;
@@ -696,7 +668,31 @@
     }
     window.deleteCategory = deleteCategory;
 
-    // スプレッドシート（DB管理）を別タブで開く
+    // 💡 新規追加：カテゴリの左右移動（順序並び替え）処理
+    async function moveCategory(index, direction) {
+      // 範囲外なら処理しない
+      if (index + direction < 0 || index + direction >= categories.length) return;
+      
+      // クライアント側（画面上）の配列を入れ替える
+      const temp = categories[index];
+      categories[index] = categories[index + direction];
+      categories[index + direction] = temp;
+      
+      // 即座に画面に並び替えを反映させる
+      initCategoryControls();
+      renderBoard();
+
+      // GAS（スプレッドシート）側に新しい順序を送信して上書き保存
+      const result = await apiRequestToGAS("updateCategoryOrder", { newOrder: categories });
+      if (result && result.success) {
+        showToast("カテゴリの並び順を保存しました。");
+      } else {
+        // エラーが発生した場合は元の状態をリロードして戻す
+        fetchDataFromGAS();
+      }
+    }
+    window.moveCategory = moveCategory;
+
     function openDatabaseConsole() {
       if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL === "") {
         showToast("Googleドライブとの連携が完了するまで、この機能は使用できません。");
@@ -753,15 +749,25 @@
         });
       }
 
-      // モーダル内一覧
+      // モーダル内一覧（💡 矢印ボタン付き）
       const settingsList = document.getElementById('settings-categories-list');
       if (settingsList) {
         settingsList.innerHTML = '';
-        categories.forEach(cat => {
+        categories.forEach((cat, index) => {
           const colorClasses = getBadgeColorClasses(cat.color);
           const item = document.createElement('div');
           item.className = `flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium border ${colorClasses}`;
+          
+          let moveBtns = '';
+          if (index > 0) {
+            moveBtns += `<button type="button" onclick="moveCategory(${index}, -1)" class="text-slate-400 hover:text-slate-700 transition" title="左へ移動"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i></button>`;
+          }
+          if (index < categories.length - 1) {
+            moveBtns += `<button type="button" onclick="moveCategory(${index}, 1)" class="text-slate-400 hover:text-slate-700 transition" title="右へ移動"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>`;
+          }
+
           item.innerHTML = `
+            ${moveBtns}
             <span class="px-1 select-none font-bold">${escapeHtml(cat.name)}</span>
             <!-- 削除ボタン（誤操作防止のため仕切り線を導入） -->
             <button type="button" onclick="deleteCategory('${cat.id}')" class="text-slate-400 hover:text-red-500 transition ml-1 pl-1 border-l border-slate-200/60" title="削除">
@@ -786,7 +792,6 @@
         const createdDate = new Date(post.createdAt);
         const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
         
-        // スプレッドシートからの時間ズレ日付文字列をYYYY-MM-DDへ正規化
         const effectiveStart = normalizeDateStr(post.start) || createdDateStr;
         const effectiveEnd = normalizeDateStr(post.end) || createdDateStr;
 
@@ -838,9 +843,10 @@
               <button onclick="confirmDeletePost('${post.id}')" class="text-slate-300 hover:text-red-500 transition px-1.5 py-0.5 rounded flex items-center gap-0.5"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i> 削除</button>
             </div>
           </div>
-          <h3 class="text-sm font-bold text-slate-900 mb-1 leading-snug flex items-center gap-1">
+          <h3 class="text-sm font-bold text-slate-900 mb-0.5 leading-snug flex items-center gap-1">
             ${isPinned ? '<i data-lucide="pin" class="w-3.5 h-3.5 text-blue-500 fill-current shrink-0"></i>' : ''} ${escapeHtml(post.title)}
           </h3>
+          ${post.author ? `<div class="text-[10px] text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${escapeHtml(post.author)}</div>` : ''}
           <p class="text-slate-600 text-[11px] whitespace-pre-wrap leading-snug border-t border-slate-50 pt-1.5 mt-1">${escapeHtml(post.content)}</p>
         `;
         container.appendChild(card);
@@ -942,7 +948,8 @@
       sortedPosts.forEach((post, i) => {
         const rawCategories = post.categories || "";
         const isPinned = (post.pinned === "TRUE" || post.pinned === true);
-        mailText += `[${i + 1}] ${isPinned ? "★[固定] " : ""}【${rawCategories}】 ${post.title}\n`;
+        const authorText = post.author ? `（発信: ${post.author}）` : "";
+        mailText += `[${i + 1}] ${isPinned ? "★[固定] " : ""}【${rawCategories}】 ${post.title} ${authorText}\n`;
         const spacedContent = post.content.split('\n').map(line => `  ${line}`).join('\n');
         mailText += `${spacedContent}\n\n`;
       });
@@ -955,7 +962,6 @@
     function closeMailModal() { document.getElementById('mail-modal').classList.add('hidden'); }
     window.closeMailModal = closeMailModal;
 
-    // クリップボードへのメールコピー
     function copyMailTextToClipboard() {
       const textarea = document.getElementById('mail-content-text');
       textarea.select();
@@ -989,7 +995,5 @@
       return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
     }
   </script>
-</body>
-</html>
 </body>
 </html>
