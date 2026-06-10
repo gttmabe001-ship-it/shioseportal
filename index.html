@@ -13,7 +13,7 @@
     body {
       font-family: "BIZ UDPGothic", "BIZ UDPゴシック", "UD Shin Go", "UD 新ゴ", "Meiryo UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
     }
-    /* スクロールバーのカスタマイズ */
+    /* スクロールバー of カスタマイズ */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -217,10 +217,12 @@
       </div>
 
       <!-- セクションB: カテゴリ（分類）の設定・管理 -->
-      <div class="border-t border-slate-100 pt-3">
-        <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
-          <i data-lucide="sliders" class="w-3 h-3 text-slate-600"></i> カテゴリ（分類）の追加・削除
-        </h3>
+      <div class="mb-5 border-t border-slate-100 pt-3">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1">
+            <i data-lucide="sliders" class="w-3 h-3 text-slate-600"></i> カテゴリ（分類）の設定・管理
+          </h3>
+        </div>
         
         <!-- カテゴリ追加サブフォーム -->
         <form id="category-form" onsubmit="handleAddCategory(event)" class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3 items-end bg-slate-50 p-2.5 rounded-lg border border-slate-100">
@@ -251,6 +253,17 @@
             <!-- JSで一覧描画 -->
           </div>
         </div>
+      </div>
+
+      <!-- セクションC: 【新設】データベース管理（直接リンク） -->
+      <div class="border-t border-slate-100 pt-3">
+        <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
+          <i data-lucide="database" class="w-3 h-3 text-blue-600"></i> データベース（DB）管理
+        </h3>
+        <button onclick="openDatabaseConsole()" class="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition shadow-sm">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span>Googleスプレッドシート（DB）を開く</span>
+        </button>
       </div>
 
       <div class="flex justify-end pt-3 border-t border-slate-100 mt-4">
@@ -683,6 +696,22 @@
     }
     window.deleteCategory = deleteCategory;
 
+    // スプレッドシート（DB管理）を別タブで開く
+    function openDatabaseConsole() {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL === "") {
+        showToast("Googleドライブとの連携が完了するまで、この機能は使用できません。");
+        return;
+      }
+      apiRequestToGAS("getSpreadsheetUrl").then(result => {
+        if (result && result.success && result.url) {
+          window.open(result.url, '_blank');
+        } else {
+          showToast("スプレッドシートのURLを取得できませんでした。");
+        }
+      });
+    }
+    window.openDatabaseConsole = openDatabaseConsole;
+
     // ==========================================
     // 🎨 UI・レンダリング制御
     // ==========================================
@@ -731,11 +760,12 @@
         categories.forEach(cat => {
           const colorClasses = getBadgeColorClasses(cat.color);
           const item = document.createElement('div');
-          item.className = `flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${colorClasses}`;
+          item.className = `flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium border ${colorClasses}`;
           item.innerHTML = `
-            <span>${escapeHtml(cat.name)}</span>
-            <button type="button" onclick="deleteCategory('${cat.id}')" class="text-slate-400 hover:text-red-500 transition ml-0.5" title="削除">
-              <i data-lucide="x-circle" class="w-3 h-3"></i>
+            <span class="px-1 select-none font-bold">${escapeHtml(cat.name)}</span>
+            <!-- 削除ボタン（誤操作防止のため仕切り線を導入） -->
+            <button type="button" onclick="deleteCategory('${cat.id}')" class="text-slate-400 hover:text-red-500 transition ml-1 pl-1 border-l border-slate-200/60" title="削除">
+              <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
             </button>
           `;
           settingsList.appendChild(item);
@@ -959,5 +989,7 @@
       return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
     }
   </script>
+</body>
+</html>
 </body>
 </html>
