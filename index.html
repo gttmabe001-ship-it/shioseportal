@@ -48,7 +48,9 @@
       <div>
         <h1 class="text-lg font-bold text-slate-900 flex items-center gap-1.5">
           <!-- 学校マークアイコン -->
-          <i data-lucide="school" class="text-blue-600 w-5 h-5"></i> 塩瀬中ポータル連絡掲示板
+          <i data-lucide="school" class="text-blue-600 w-5 h-5"></i> 
+          <!-- 掲示板の名前（スプレッドシートから読み込んで動的に変更されます） -->
+          <span id="board-title-display">塩瀬中ポータル連絡掲示板</span>
         </h1>
       </div>
       
@@ -59,10 +61,10 @@
           <span>新規作成</span>
         </button>
 
-        <!-- カテゴリ設定ボタン -->
-        <button onclick="openCategoryModal()" class="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition border border-slate-200">
+        <!-- 掲示板設定ボタン（統合版ポップアップを開く） -->
+        <button onclick="openSettingsModal()" class="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition border border-slate-200" title="掲示板の名前やカテゴリを管理します">
           <i data-lucide="settings" class="w-3 h-3"></i>
-          <span>カテゴリ設定</span>
+          <span>掲示板設定</span>
         </button>
         
         <!-- コピーボタン -->
@@ -189,50 +191,70 @@
     </div>
   </div>
 
-  <!-- 2. カテゴリ設定モーダル -->
-  <div id="category-settings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <!-- 2. 掲示板設定（統合ポップアップ）モーダル -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
     <div class="bg-white p-4 rounded-lg shadow-xl max-w-lg w-full mx-4 border border-slate-100 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-        <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1">
-          <i data-lucide="sliders" class="text-slate-600 w-3.5 h-3.5"></i> カテゴリ（分類）の設定・管理
+        <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="settings" class="text-slate-600 w-4 h-4"></i> 掲示板設定・管理
         </h2>
-        <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600">
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <!-- カテゴリ追加フォーム -->
-      <form id="category-form" onsubmit="handleAddCategory(event)" class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 items-end bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-        <div class="md:col-span-2">
-          <label class="block text-[9px] font-bold text-slate-600 mb-0.5">カテゴリ名 <span class="text-red-500">*</span></label>
-          <input type="text" id="new-category-name" required placeholder="例: 重要、学年連絡" class="w-full px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white">
-        </div>
-        <div>
-          <label class="block text-[9px] font-bold text-slate-600 mb-0.5">テーマカラー <span class="text-red-500">*</span></label>
-          <select id="new-category-color" required class="w-full px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white">
-            <option value="red">🔴 レッド</option>
-            <option value="blue" selected>🔵 ブルー</option>
-            <option value="emerald">🟢 エメラルド</option>
-            <option value="amber">🟡 アンバー</option>
-            <option value="purple">🟣 パープル</option>
-            <option value="pink">🌸 ピンク</option>
-            <option value="slate">⚫ グレー</option>
-          </select>
-        </div>
-        <button id="add-category-btn" type="submit" class="w-full px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium text-xs transition flex items-center justify-center gap-1">
-          <i data-lucide="plus-circle" class="w-3 h-3"></i> 追加
-        </button>
-      </form>
+      <!-- セクションA: 掲示板の名前（タイトル）設定 -->
+      <div class="mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+        <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
+          <i data-lucide="type" class="w-3 h-3 text-blue-600"></i> 掲示板の名前変更（全体同期）
+        </h3>
+        <form onsubmit="handleTitleUpdate(event)" class="flex gap-2">
+          <input type="text" id="setting-board-title" required placeholder="例: 塩瀬中ポータル連絡掲示板" class="flex-1 px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-bold bg-white">
+          <button id="save-title-btn" type="submit" class="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition shadow-sm whitespace-nowrap">
+            名前を保存
+          </button>
+        </form>
+      </div>
 
-      <div class="mb-2">
-        <h3 class="text-[9px] font-bold text-slate-500 mb-1.5 uppercase">現在の登録カテゴリ一覧</h3>
-        <div id="settings-categories-list" class="flex flex-wrap gap-1.5">
-          <!-- JSで動的に一覧描画 -->
+      <!-- セクションB: カテゴリ（分類）の設定・管理 -->
+      <div class="border-t border-slate-100 pt-3">
+        <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
+          <i data-lucide="sliders" class="w-3 h-3 text-slate-600"></i> カテゴリ（分類）の追加・削除
+        </h3>
+        
+        <!-- カテゴリ追加サブフォーム -->
+        <form id="category-form" onsubmit="handleAddCategory(event)" class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3 items-end bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <div class="md:col-span-2">
+            <label class="block text-[9px] font-bold text-slate-600 mb-0.5">カテゴリ名 <span class="text-red-500">*</span></label>
+            <input type="text" id="new-category-name" required placeholder="例: 重要、学年連絡" class="w-full px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white">
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-slate-600 mb-0.5">カラー <span class="text-red-500">*</span></label>
+            <select id="new-category-color" required class="w-full px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white">
+              <option value="red">🔴 レッド</option>
+              <option value="blue" selected>🔵 ブルー</option>
+              <option value="emerald">🟢 エメラルド</option>
+              <option value="amber">🟡 アンバー</option>
+              <option value="purple">🟣 パープル</option>
+              <option value="pink">🌸 ピンク</option>
+              <option value="slate">⚫ グレー</option>
+            </select>
+          </div>
+          <button id="add-category-btn" type="submit" class="w-full px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium text-xs transition flex items-center justify-center gap-1">
+            <i data-lucide="plus-circle" class="w-3 h-3"></i> 追加
+          </button>
+        </form>
+
+        <div class="mb-2">
+          <h4 class="text-[9px] font-bold text-slate-500 mb-1.5 uppercase">登録中のカテゴリ一覧</h4>
+          <div id="settings-categories-list" class="flex flex-wrap gap-1.5">
+            <!-- JSで一覧描画 -->
+          </div>
         </div>
       </div>
 
       <div class="flex justify-end pt-3 border-t border-slate-100 mt-4">
-        <button onclick="closeCategoryModal()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
+        <button onclick="closeSettingsModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
           閉じる
         </button>
       </div>
@@ -285,7 +307,7 @@
     // =========================================================================
     // 設定手順書（gas_setup.md）に沿って取得したGASウェブアプリURLをここに貼り付けてください。
     // スプレッドシート連携APIを介して、完全なクラウド共有状態で掲示板が動作するようになります。
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzmsb1bGvMx14VZQ0qEek0hdasAbEiqgpVsUPgXWAsNBh6bivTcpudHeh0R1Y14IfBiYA/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzqzFH_0felNRjFU8SQ0PG2VzX8iBB9CD-iDRVmm-PTxEuwl3h9WfFClYkXKqOHWR9O7A/exec";
 
     // グローバル状態管理
     let posts = [];
@@ -339,6 +361,17 @@
       cancelBtn.onclick = function() { alertModal.classList.add('hidden'); };
     }
     window.showConfirm = showConfirm;
+
+    // スプレッドシートからの日付データを安全にYYYY-MM-DDにクレンジングする補助関数
+    function normalizeDateStr(dateInput) {
+      if (!dateInput) return "";
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
 
     // 初期起動
     window.onload = function() {
@@ -396,6 +429,16 @@
       if (result && result.success) {
         posts = result.posts || [];
         categories = result.categories || [];
+        
+        // クラウド側から動的に掲示板の名前を読み込んで反映
+        if (result.config) {
+          const titleObj = result.config.find(c => c.key === "board_title");
+          if (titleObj && titleObj.value) {
+            document.getElementById('board-title-display').innerText = titleObj.value;
+            document.getElementById('setting-board-title').value = titleObj.value;
+          }
+        }
+        
         initCategoryControls();
         renderBoard();
       }
@@ -434,20 +477,42 @@
     }
     window.closeCreateForm = closeCreateForm;
 
-    // カテゴリモーダル
-    function openCategoryModal() {
-      document.getElementById('category-settings-modal').classList.remove('hidden');
-    }
-    window.openCategoryModal = openCategoryModal;
+    // 掲示板設定・統合モーダル
+    function openSettingsModal() {
+      // 現在表示されている名前をフォームの初期値としてセット
+      const currentTitle = document.getElementById('board-title-display').innerText;
+      document.getElementById('setting-board-title').value = currentTitle;
 
-    function closeCategoryModal() {
-      document.getElementById('category-settings-modal').classList.add('hidden');
+      document.getElementById('settings-modal').classList.remove('hidden');
     }
-    window.closeCategoryModal = closeCategoryModal;
+    window.openSettingsModal = openSettingsModal;
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+    window.closeSettingsModal = closeSettingsModal;
 
     // ==========================================
     // 💾 データ操作処理（GAS同期）
     // ==========================================
+
+    // 掲示板の名前（タイトル）変更
+    async function handleTitleUpdate(e) {
+      e.preventDefault();
+      const newTitle = document.getElementById('setting-board-title').value.trim();
+      if (!newTitle) return;
+
+      document.getElementById('save-title-btn').disabled = true;
+
+      const result = await apiRequestToGAS("updateConfig", { key: "board_title", value: newTitle });
+      if (result && result.success) {
+        document.getElementById('board-title-display').innerText = newTitle;
+        showToast("掲示板の名前を保存し、全体へ同期しました！");
+      }
+
+      document.getElementById('save-title-btn').disabled = false;
+    }
+    window.handleTitleUpdate = handleTitleUpdate;
 
     // 投稿登録・編集
     async function handleFormSubmit(e) {
@@ -456,7 +521,7 @@
       const editId = document.getElementById('edit-id').value;
       const title = document.getElementById('post-title').value;
       const content = document.getElementById('post-content').value;
-      const start = document.getElementById('post-start').value;
+      let start = document.getElementById('post-start').value;
       const end = document.getElementById('post-end').value;
       const pinned = document.getElementById('post-pinned').checked;
 
@@ -468,6 +533,15 @@
       if (selectedCats.length === 0) {
         showToast("分類を少なくとも1つ選択してください。");
         return;
+      }
+
+      // 💡 掲載開始日が未入力かつ掲載終了日が入力されている場合、本日（当日）の日付を設定
+      if (!start && end) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        start = `${y}-${m}-${d}`;
       }
 
       const postData = {
@@ -508,8 +582,8 @@
       document.getElementById('edit-id').value = post.id;
       document.getElementById('post-title').value = post.title;
       document.getElementById('post-content').value = post.content;
-      document.getElementById('post-start').value = post.start || '';
-      document.getElementById('post-end').value = post.end || '';
+      document.getElementById('post-start').value = normalizeDateStr(post.start) || '';
+      document.getElementById('post-end').value = normalizeDateStr(post.end) || '';
       document.getElementById('post-pinned').checked = (post.pinned === "TRUE");
 
       const rawCategories = post.categories || "";
@@ -681,10 +755,15 @@
       const activePosts = posts.filter(post => {
         const createdDate = new Date(post.createdAt);
         const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
-        const effectiveStart = post.start || createdDateStr;
-        const effectiveEnd = post.end || createdDateStr;
+        
+        // スプレッドシートからの時間ズレ日付文字列をYYYY-MM-DDへ正規化
+        const effectiveStart = normalizeDateStr(post.start) || createdDateStr;
+        const effectiveEnd = normalizeDateStr(post.end) || createdDateStr;
 
-        return (baseDate >= new Date(effectiveStart + "T00:00:00") && baseDate <= new Date(effectiveEnd + "T23:59:59"));
+        const startDate = new Date(effectiveStart + "T00:00:00");
+        const endDate = new Date(effectiveEnd + "T23:59:59");
+
+        return (baseDate >= startDate && baseDate <= endDate);
       });
 
       // ピン留め優先ソート
@@ -710,7 +789,9 @@
         });
 
         const createdDateStr = formatOnlyDate(post.createdAt);
-        const periodText = (!post.start && !post.end) ? `${createdDateStr.replace(/\//g, '-')} (当日のみ)` : `${post.start || createdDateStr.replace(/\//g, '-')} 〜 ${post.end || createdDateStr.replace(/\//g, '-')}`;
+        const normStart = normalizeDateStr(post.start);
+        const normEnd = normalizeDateStr(post.end);
+        const periodText = (!normStart && !normEnd) ? `${createdDateStr.replace(/\//g, '-')} (当日のみ)` : `${normStart || createdDateStr.replace(/\//g, '-')} 〜 ${normEnd || createdDateStr.replace(/\//g, '-')}`;
         const isPinned = (post.pinned === "TRUE" || post.pinned === true);
 
         const card = document.createElement('article');
@@ -804,7 +885,11 @@
       const activePosts = posts.filter(post => {
         const createdDate = new Date(post.createdAt);
         const createdDateStr = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
-        return (baseDate >= new Date((post.start || createdDateStr) + "T00:00:00") && baseDate <= new Date((post.end || createdDateStr) + "T23:59:59"));
+        
+        const normStart = normalizeDateStr(post.start) || createdDateStr;
+        const normEnd = normalizeDateStr(post.end) || createdDateStr;
+
+        return (baseDate >= new Date(normStart + "T00:00:00") && baseDate <= new Date(normEnd + "T23:59:59"));
       });
 
       const sortedPosts = [...activePosts].sort((a, b) => {
@@ -840,6 +925,7 @@
     function closeMailModal() { document.getElementById('mail-modal').classList.add('hidden'); }
     window.closeMailModal = closeMailModal;
 
+    // クリップボードへのメールコピー
     function copyMailTextToClipboard() {
       const textarea = document.getElementById('mail-content-text');
       textarea.select();
@@ -871,6 +957,7 @@
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
-    } </script>
+    }
+  </script>
 </body>
 </html>
